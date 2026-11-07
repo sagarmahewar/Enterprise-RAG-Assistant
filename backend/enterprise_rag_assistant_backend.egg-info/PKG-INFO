@@ -1,0 +1,27 @@
+Metadata-Version: 2.4
+Name: enterprise-rag-assistant-backend
+Version: 0.1.0
+Summary: Backend foundation for Enterprise RAG Assistant
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi<1.0.0,>=0.115.0
+Requires-Dist: httpx<1.0.0,>=0.27.0
+Requires-Dist: python-docx<2.0.0,>=1.1.2
+Requires-Dist: pymupdf<2.0.0,>=1.24.10
+Requires-Dist: qdrant-client<2.0.0,>=1.12.0
+Requires-Dist: python-multipart<1.0.0,>=0.0.9
+Requires-Dist: uvicorn[standard]<1.0.0,>=0.30.0
+Provides-Extra: dev
+Requires-Dist: mypy<2.0.0,>=1.10.0; extra == "dev"
+Requires-Dist: pytest<9.0.0,>=8.3.0; extra == "dev"
+Requires-Dist: ruff<1.0.0,>=0.6.0; extra == "dev"
+
+# Backend
+
+FastAPI backend for the Enterprise RAG Assistant.
+
+## Observability
+
+- Every request is assigned/carries an `X-Request-Id` correlation ID.
+- API responses include `X-Request-Id` so frontend/logs can correlate events.
+- Structured JSON events are emitted for request lifecycle and key domain actions (`upload.*`, `retrieval.*`, `qa.*`) via logger `app.observability`.
