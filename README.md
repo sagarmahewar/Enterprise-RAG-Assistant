@@ -6,7 +6,7 @@ This project is designed as a portfolio-grade implementation for AI engineering,
 
 ## Credit
 
-Co-engineered with **Microsoft Scout** — a portfolio build by **Sagar Mahewar** on Microsoft AI tooling.
+Co-engineered with **Microsoft Tools** — a portfolio build by **Sagar Mahewar**.
 
 ## Objectives
 
