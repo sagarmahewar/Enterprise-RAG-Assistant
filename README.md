@@ -103,12 +103,13 @@ Set environment variables (Render dashboard):
 - `API_V1_PREFIX=/api/v1`
 - `CORS_ORIGINS=https://sagarmahewar.github.io`
 - `LLM_PROVIDER_BACKEND=groq`
-- `EMBEDDING_PROVIDER_BACKEND=groq`
+- `EMBEDDING_PROVIDER_BACKEND=openai`
 - `VECTOR_STORE_BACKEND=qdrant`
 - `RERANKER_BACKEND=local-fake-reranker`
 - `GROQ_API_KEY=<your-groq-key>`
 - `GROQ_LLM_MODEL=llama-3.1-8b-instant`
-- `GROQ_EMBEDDING_MODEL=nomic-embed-text-v1.5`
+- `OPENAI_API_KEY=<your-openai-key>`
+- `OPENAI_EMBEDDING_MODEL=text-embedding-3-small`
 - `QDRANT_URL=<your-qdrant-cloud-url>`
 - `QDRANT_API_KEY=<your-qdrant-cloud-api-key>`
 - `QDRANT_COLLECTION_NAME=rag_chunks_prod`

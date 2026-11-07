@@ -47,6 +47,10 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(actual.retrieval_min_citation_confidence_score, 0.35)
         self.assertEqual(actual.qa_min_context_chunks, 1)
         self.assertEqual(actual.qa_min_fused_score, 0.05)
+        self.assertEqual(actual.openai_base_url, "https://api.openai.com/v1")
+        self.assertEqual(actual.openai_api_key, "")
+        self.assertEqual(actual.openai_embedding_model, "text-embedding-3-small")
+        self.assertEqual(actual.openai_request_timeout_seconds, 60)
 
     def test_csv_cors_parsing(self) -> None:
         with patch.dict(

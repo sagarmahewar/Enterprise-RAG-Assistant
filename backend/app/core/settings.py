@@ -68,6 +68,10 @@ class Settings:
     retrieval_min_citation_confidence_score: float
     qa_min_context_chunks: int
     qa_min_fused_score: float
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_api_key: str = ""
+    openai_embedding_model: str = "text-embedding-3-small"
+    openai_request_timeout_seconds: int = 60
 
     @staticmethod
     def from_env() -> Settings:
@@ -172,6 +176,13 @@ class Settings:
         )
         if qa_min_fused_score > 1:
             raise ValueError("QA_MIN_FUSED_SCORE must be between 0 and 1")
+        openai_base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        openai_api_key = os.getenv("OPENAI_API_KEY", "")
+        openai_embedding_model = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+        openai_request_timeout_seconds = _parse_positive_int(
+            os.getenv("OPENAI_REQUEST_TIMEOUT_SECONDS", "60"),
+            "OPENAI_REQUEST_TIMEOUT_SECONDS",
+        )
 
         return Settings(
             app_name=app_name,
@@ -211,6 +222,10 @@ class Settings:
             retrieval_min_citation_confidence_score=retrieval_min_citation_confidence_score,
             qa_min_context_chunks=qa_min_context_chunks,
             qa_min_fused_score=qa_min_fused_score,
+            openai_base_url=openai_base_url,
+            openai_api_key=openai_api_key,
+            openai_embedding_model=openai_embedding_model,
+            openai_request_timeout_seconds=openai_request_timeout_seconds,
         )
 
 

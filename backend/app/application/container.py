@@ -18,6 +18,7 @@ from app.infrastructure.providers.fake import (
 )
 from app.infrastructure.providers.groq import GroqEmbeddingProvider, GroqLLMProvider
 from app.infrastructure.providers.ollama import OllamaEmbeddingProvider, OllamaLLMProvider
+from app.infrastructure.providers.openai import OpenAIEmbeddingProvider
 from app.infrastructure.providers.parsers import (
     DocxDocumentParser,
     PdfDocumentParser,
@@ -91,6 +92,15 @@ def _build_embedding_provider(current_settings: Settings) -> EmbeddingProvider:
             api_key=current_settings.groq_api_key,
             model_name=current_settings.groq_embedding_model,
             timeout_seconds=current_settings.groq_request_timeout_seconds,
+        )
+    if current_settings.embedding_provider_backend == "openai":
+        if not current_settings.openai_api_key:
+            raise ValueError("OPENAI_API_KEY must be set when EMBEDDING_PROVIDER_BACKEND=openai")
+        return OpenAIEmbeddingProvider(
+            base_url=current_settings.openai_base_url,
+            api_key=current_settings.openai_api_key,
+            model_name=current_settings.openai_embedding_model,
+            timeout_seconds=current_settings.openai_request_timeout_seconds,
         )
     raise ValueError(
         f"Unsupported EMBEDDING_PROVIDER_BACKEND: {current_settings.embedding_provider_backend}"
