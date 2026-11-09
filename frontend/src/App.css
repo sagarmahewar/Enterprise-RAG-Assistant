@@ -997,6 +997,12 @@ thead th {
   line-height: 1.56;
 }
 
+.chunk-citation-line {
+  margin-top: 0.58rem !important;
+  color: #b8c8eb;
+  font-size: 0.8rem !important;
+}
+
 .chunk-metadata-label {
   margin-top: 0.52rem !important;
   color: #aeb9d1;

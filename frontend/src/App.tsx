@@ -35,7 +35,7 @@ import remarkGfm from "remark-gfm";
 import { askQuestion, listDocuments, uploadDocument } from "./api";
 import "./App.css";
 import { appConfig } from "./config";
-import type { DocumentRecord, QAAskResponse, RetrievedChunkRecord } from "./types";
+import type { DocumentRecord, QAAskResponse } from "./types";
 
 const SUPPORTED_TYPES = ".pdf,.docx,.txt";
 
@@ -404,15 +404,17 @@ export function App() {
     ];
   }, [documents, selectedDocumentIds]);
 
-  const chunkById = useMemo(() => {
-    const chunks = new Map<string, RetrievedChunkRecord>();
+  const citationByChunkId = useMemo(() => {
+    const citations = new Map<string, QAAskResponse["citations"][number]>();
     if (!qaResponse) {
-      return chunks;
+      return citations;
     }
-    for (const chunk of qaResponse.retrieved_chunks) {
-      chunks.set(chunk.chunk_id, chunk);
+    for (const citation of qaResponse.citations) {
+      if (!citations.has(citation.chunk_id)) {
+        citations.set(citation.chunk_id, citation);
+      }
     }
-    return chunks;
+    return citations;
   }, [qaResponse]);
 
   useEffect(() => {
@@ -604,14 +606,6 @@ export function App() {
       }
       return next;
     });
-  }
-
-  function jumpToChunk(chunkId: string): void {
-    const target = document.getElementById(`chunk-${chunkId}`);
-    if (target instanceof HTMLDetailsElement) {
-      target.open = true;
-    }
-    target?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function showFutureHint(target: "settings" | "profile"): void {
@@ -885,19 +879,6 @@ export function App() {
                         </div>
                       </section>
 
-                      <section className="subsection">
-                        <p className="panel-title">Source citations</p>
-                        <div className="citation-list">
-                          {qaResponse.citations.length === 0 && <p className="status-line">No citations available.</p>}
-                          {qaResponse.citations.map((citation) => (
-                            <button key={citation.chunk_id} type="button" className="citation-chip" onClick={() => jumpToChunk(citation.chunk_id)}>
-                              <Layers3 size={13} />
-                              {citation.document_name} · {citation.page_ref ?? "n/a"} · {citation.chunk_id}
-                            </button>
-                          ))}
-                        </div>
-                      </section>
-
                       <div className="answer-actions">
                         <button type="button" onClick={() => void copyAnswerText()}>
                           <Copy size={15} />
@@ -953,25 +934,36 @@ export function App() {
                     {qaResponse.retrieved_chunks.length === 0 && <p className="status-line">No retrieved chunks for this answer.</p>}
                     {qaResponse.retrieved_chunks.length > 0 && (
                       <div className="chunk-list">
-                        {qaResponse.retrieved_chunks.map((chunk) => (
-                          <details key={chunk.chunk_id} className="chunk-card" id={`chunk-${chunk.chunk_id}`}>
-                            <summary className="chunk-summary">
-                              <div className="chunk-summary-main">
-                                <SourceTypeIcon sourceType={getSourceType(documentById.get(chunk.document_id)?.mime_type ?? "")} />
-                                <strong>{chunk.document_name}</strong>
+                        {qaResponse.retrieved_chunks.map((chunk) => {
+                          const citation = citationByChunkId.get(chunk.chunk_id);
+                          return (
+                            <details key={chunk.chunk_id} className="chunk-card" id={`chunk-${chunk.chunk_id}`}>
+                              <summary className="chunk-summary">
+                                <div className="chunk-summary-main">
+                                  <SourceTypeIcon sourceType={getSourceType(documentById.get(chunk.document_id)?.mime_type ?? "")} />
+                                  <strong>{chunk.document_name}</strong>
+                                </div>
+                                <div className="chunk-summary-meta">
+                                  <span>Page: {chunk.page_ref ?? citation?.page_ref ?? "n/a"}</span>
+                                  <span>Retrieval score: {chunk.score?.toFixed(4) ?? "n/a"}</span>
+                                </div>
+                              </summary>
+                              <div className="chunk-content">
+                                <p>{chunk.text}</p>
+                                {citation ? (
+                                  <p className="chunk-citation-line">
+                                    Cited in answer · Confidence {citation.confidence_score.toFixed(2)} · Citation score{" "}
+                                    {citation.score?.toFixed(4) ?? "n/a"}
+                                  </p>
+                                ) : (
+                                  <p className="chunk-citation-line">Retrieved for context (not directly cited in final answer)</p>
+                                )}
+                                <p className="chunk-metadata-label">Metadata</p>
+                                <pre>{JSON.stringify(chunk.metadata, null, 2)}</pre>
                               </div>
-                              <div className="chunk-summary-meta">
-                                <span>Page: {chunk.page_ref ?? "n/a"}</span>
-                                <span>Score: {chunk.score?.toFixed(4) ?? "n/a"}</span>
-                              </div>
-                            </summary>
-                            <div className="chunk-content">
-                              <p>{chunk.text}</p>
-                              <p className="chunk-metadata-label">Metadata</p>
-                              <pre>{JSON.stringify(chunk.metadata, null, 2)}</pre>
-                            </div>
-                          </details>
-                        ))}
+                            </details>
+                          );
+                        })}
                       </div>
                     )}
                   </section>
@@ -1008,38 +1000,7 @@ export function App() {
                         </article>
                       </div>
 
-                      <div className="sources-list">
-                        <div className="panel-title-row">
-                          <p className="panel-title">Sources</p>
-                          <button type="button" className="link-button">
-                            View all sources
-                          </button>
-                        </div>
-                        {qaResponse.citations.length === 0 && <p className="status-line">No sources for this answer.</p>}
-                        {qaResponse.citations.map((citation) => {
-                          const document = documentById.get(citation.document_id);
-                          const sourceType = getSourceType(document?.mime_type);
-                          const excerpt = chunkById.get(citation.chunk_id)?.text ?? "No excerpt available";
-                          return (
-                            <article key={citation.chunk_id} className="source-card">
-                              <div className="source-header">
-                                <SourceTypeIcon sourceType={sourceType} />
-                                <div>
-                                  <p className="source-name">{citation.document_name}</p>
-                                  <p className="source-meta">
-                                    {sourceType} · Updated {document ? formatRelativeTime(document.ingested_at) : "n/a"}
-                                  </p>
-                                </div>
-                              </div>
-                              <p className="source-excerpt">{excerpt}</p>
-                              <p className="source-ref">
-                                Ref: {citation.chunk_id} · Page {citation.page_ref ?? "n/a"} · Score{" "}
-                                {citation.score?.toFixed(4) ?? "n/a"}
-                              </p>
-                            </article>
-                          );
-                        })}
-                      </div>
+                      <p className="status-line">Detailed sources are available in the Retrieved chunk viewer.</p>
                     </>
                   )}
                 </section>
