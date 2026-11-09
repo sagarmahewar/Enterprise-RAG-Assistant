@@ -622,7 +622,7 @@ export function App() {
                 </button>
               </div>
               <p className="credit-line">
-                Co-engineered with <strong>Microsoft Scout</strong> — a portfolio build by{" "}
+                Co-engineered with <strong>Microsoft Tools</strong> — a portfolio build by{" "}
                 <strong>Sagar Mahewar</strong> on Microsoft AI tooling.
               </p>
             </>
