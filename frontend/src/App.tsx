@@ -190,15 +190,21 @@ function getSourceType(mimeType: string | undefined): string {
 }
 
 function summarizeKeyPoints(answer: string): string[] {
-  const explicitBullets = answer
+  const normalized = normalizeAnswerForMarkdown(answer)
+    .replace(/^\|.*\|$/gm, "")
+    .replace(/^[-:| ]+$/gm, "")
+    .replace(/\*\*/g, "")
+    .replace(/`/g, "");
+
+  const explicitBullets = normalized
     .split("\n")
     .map((line) => line.trim())
-    .filter((line) => line.startsWith("- ") || line.startsWith("* "))
-    .map((line) => line.replace(/^[-*]\s+/, ""));
+    .filter((line) => line.startsWith("- ") || line.startsWith("* ") || line.startsWith("• "))
+    .map((line) => line.replace(/^[-*•]\s+/, ""));
   if (explicitBullets.length > 0) {
     return explicitBullets.slice(0, 4);
   }
-  return answer
+  return normalized
     .split(/[.!?]\s+/)
     .map((sentence) => sentence.trim())
     .filter((sentence) => sentence.length > 20)
@@ -244,6 +250,10 @@ function isMarkdownTableRow(line: string): boolean {
 
 function normalizeAnswerForMarkdown(answer: string): string {
   const sanitized = answer
+    .replace(/&lt;br\s*\/?&gt;/gi, "\n")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&amp;/gi, "&")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/\r\n?/g, "\n")
     .replace(/\\([|*_`])/g, "$1");
