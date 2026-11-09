@@ -12,6 +12,7 @@ vi.mock("./api", () => ({
 const mockedListDocuments = vi.mocked(listDocuments);
 const mockedUploadDocument = vi.mocked(uploadDocument);
 const mockedAskQuestion = vi.mocked(askQuestion);
+const QUERY_PLACEHOLDER = "Attach or select document(s) first, then ask a question grounded in those sources...";
 
 describe("App", () => {
   beforeEach(() => {
@@ -98,7 +99,7 @@ describe("App", () => {
     render(<App />);
     await waitFor(() => expect(mockedListDocuments).toHaveBeenCalled());
 
-    fireEvent.change(screen.getByPlaceholderText("Ask a question about company knowledge..."), {
+    fireEvent.change(screen.getByPlaceholderText(QUERY_PLACEHOLDER), {
       target: { value: "What is retention policy?" }
     });
     fireEvent.click(screen.getByLabelText("Submit question"));
@@ -126,7 +127,7 @@ describe("App", () => {
     await waitFor(() => expect(screen.getByText("Upload failed")).toBeTruthy());
 
     fireEvent.click(screen.getByRole("button", { name: "Ask AI" }));
-    fireEvent.change(screen.getByPlaceholderText("Ask a question about company knowledge..."), {
+    fireEvent.change(screen.getByPlaceholderText(QUERY_PLACEHOLDER), {
       target: { value: "Any policy?" }
     });
     fireEvent.click(screen.getByLabelText("Submit question"));
