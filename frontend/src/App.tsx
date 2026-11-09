@@ -28,6 +28,8 @@ import {
   X
 } from "lucide-react";
 import { ChangeEvent, DragEvent, FormEvent, KeyboardEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { askQuestion, listDocuments, uploadDocument } from "./api";
 import "./App.css";
@@ -235,52 +237,48 @@ function toDocPromptLabel(documentName: string): string {
   return noExtension.length > 48 ? `${noExtension.slice(0, 45)}...` : noExtension;
 }
 
-type AnswerSegment = { type: "paragraph"; text: string } | { type: "unordered" | "ordered"; items: string[] };
+function isMarkdownTableRow(line: string): boolean {
+  return /^\s*\|.*\|\s*$/.test(line.trim());
+}
 
-function buildAnswerSegments(answer: string): AnswerSegment[] {
-  const lines = answer
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-  const segments: AnswerSegment[] = [];
-  let listType: "unordered" | "ordered" | null = null;
-  let listItems: string[] = [];
+function normalizeAnswerForMarkdown(answer: string): string {
+  const normalizedLines = answer.split(/\r?\n/).map((line) => line.replace(/\s+$/g, ""));
+  const output: string[] = [];
+  let index = 0;
 
-  function flushList(): void {
-    if (listType && listItems.length > 0) {
-      segments.push({ type: listType, items: [...listItems] });
-    }
-    listType = null;
-    listItems = [];
-  }
+  while (index < normalizedLines.length) {
+    const current = normalizedLines[index];
 
-  for (const line of lines) {
-    const unorderedMatch = line.match(/^[-*•]\s+(.+)$/);
-    if (unorderedMatch) {
-      if (listType !== "unordered") {
-        flushList();
-        listType = "unordered";
+    if (isMarkdownTableRow(current)) {
+      output.push(current.trim());
+      index += 1;
+      while (index < normalizedLines.length) {
+        const candidate = normalizedLines[index];
+        if (candidate.trim().length === 0) {
+          index += 1;
+          continue;
+        }
+        if (!isMarkdownTableRow(candidate)) {
+          break;
+        }
+        output.push(candidate.trim());
+        index += 1;
       }
-      listItems.push(unorderedMatch[1]);
       continue;
     }
 
-    const orderedMatch = line.match(/^\d+\.\s+(.+)$/);
-    if (orderedMatch) {
-      if (listType !== "ordered") {
-        flushList();
-        listType = "ordered";
+    if (current.trim().length === 0) {
+      const previous = output.length > 0 ? output[output.length - 1] : undefined;
+      if (previous !== "") {
+        output.push("");
       }
-      listItems.push(orderedMatch[1]);
-      continue;
+    } else {
+      output.push(current);
     }
-
-    flushList();
-    segments.push({ type: "paragraph", text: line });
+    index += 1;
   }
 
-  flushList();
-  return segments;
+  return output.join("\n").trim();
 }
 
 function SourceTypeIcon({ sourceType }: { sourceType: string }) {
@@ -838,28 +836,8 @@ export function App() {
                         </div>
                       </header>
 
-                      <div className="answer-body">
-                        {buildAnswerSegments(qaResponse.answer).map((segment, index) => {
-                          if (segment.type === "paragraph") {
-                            return <p key={`p-${index}`}>{segment.text}</p>;
-                          }
-                          if (segment.type === "unordered") {
-                            return (
-                              <ul key={`ul-${index}`} className="answer-list">
-                                {segment.items.map((item) => (
-                                  <li key={item}>{item}</li>
-                                ))}
-                              </ul>
-                            );
-                          }
-                          return (
-                            <ol key={`ol-${index}`} className="answer-list">
-                              {segment.items.map((item) => (
-                                <li key={item}>{item}</li>
-                              ))}
-                            </ol>
-                          );
-                        })}
+                      <div className="answer-body answer-markdown">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizeAnswerForMarkdown(qaResponse.answer)}</ReactMarkdown>
                         {qaResponse.insufficient_context && (
                           <p className="status-line warning">Insufficient context for a high-confidence grounded answer.</p>
                         )}
