@@ -235,6 +235,54 @@ function toDocPromptLabel(documentName: string): string {
   return noExtension.length > 48 ? `${noExtension.slice(0, 45)}...` : noExtension;
 }
 
+type AnswerSegment = { type: "paragraph"; text: string } | { type: "unordered" | "ordered"; items: string[] };
+
+function buildAnswerSegments(answer: string): AnswerSegment[] {
+  const lines = answer
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  const segments: AnswerSegment[] = [];
+  let listType: "unordered" | "ordered" | null = null;
+  let listItems: string[] = [];
+
+  function flushList(): void {
+    if (listType && listItems.length > 0) {
+      segments.push({ type: listType, items: [...listItems] });
+    }
+    listType = null;
+    listItems = [];
+  }
+
+  for (const line of lines) {
+    const unorderedMatch = line.match(/^[-*•]\s+(.+)$/);
+    if (unorderedMatch) {
+      if (listType !== "unordered") {
+        flushList();
+        listType = "unordered";
+      }
+      listItems.push(unorderedMatch[1]);
+      continue;
+    }
+
+    const orderedMatch = line.match(/^\d+\.\s+(.+)$/);
+    if (orderedMatch) {
+      if (listType !== "ordered") {
+        flushList();
+        listType = "ordered";
+      }
+      listItems.push(orderedMatch[1]);
+      continue;
+    }
+
+    flushList();
+    segments.push({ type: "paragraph", text: line });
+  }
+
+  flushList();
+  return segments;
+}
+
 function SourceTypeIcon({ sourceType }: { sourceType: string }) {
   return (
     <span className={`source-type-icon tone-${sourceType.toLowerCase()}`}>
@@ -546,6 +594,9 @@ export function App() {
 
   function jumpToChunk(chunkId: string): void {
     const target = document.getElementById(`chunk-${chunkId}`);
+    if (target instanceof HTMLDetailsElement) {
+      target.open = true;
+    }
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -788,9 +839,27 @@ export function App() {
                       </header>
 
                       <div className="answer-body">
-                        {qaResponse.answer.split("\n").map((paragraph) => (
-                          <p key={paragraph}>{paragraph}</p>
-                        ))}
+                        {buildAnswerSegments(qaResponse.answer).map((segment, index) => {
+                          if (segment.type === "paragraph") {
+                            return <p key={`p-${index}`}>{segment.text}</p>;
+                          }
+                          if (segment.type === "unordered") {
+                            return (
+                              <ul key={`ul-${index}`} className="answer-list">
+                                {segment.items.map((item) => (
+                                  <li key={item}>{item}</li>
+                                ))}
+                              </ul>
+                            );
+                          }
+                          return (
+                            <ol key={`ol-${index}`} className="answer-list">
+                              {segment.items.map((item) => (
+                                <li key={item}>{item}</li>
+                              ))}
+                            </ol>
+                          );
+                        })}
                         {qaResponse.insufficient_context && (
                           <p className="status-line warning">Insufficient context for a high-confidence grounded answer.</p>
                         )}
@@ -889,19 +958,23 @@ export function App() {
                     {qaResponse.retrieved_chunks.length > 0 && (
                       <div className="chunk-list">
                         {qaResponse.retrieved_chunks.map((chunk) => (
-                          <article key={chunk.chunk_id} className="chunk-card" id={`chunk-${chunk.chunk_id}`}>
-                            <header>
-                              <SourceTypeIcon sourceType={getSourceType(documentById.get(chunk.document_id)?.mime_type ?? "")} />
-                              <strong>{chunk.document_name}</strong>
-                              <span>Page: {chunk.page_ref ?? "n/a"}</span>
-                              <span>Score: {chunk.score?.toFixed(4) ?? "n/a"}</span>
-                            </header>
-                            <p>{chunk.text}</p>
-                            <details>
-                              <summary>Metadata</summary>
+                          <details key={chunk.chunk_id} className="chunk-card" id={`chunk-${chunk.chunk_id}`}>
+                            <summary className="chunk-summary">
+                              <div className="chunk-summary-main">
+                                <SourceTypeIcon sourceType={getSourceType(documentById.get(chunk.document_id)?.mime_type ?? "")} />
+                                <strong>{chunk.document_name}</strong>
+                              </div>
+                              <div className="chunk-summary-meta">
+                                <span>Page: {chunk.page_ref ?? "n/a"}</span>
+                                <span>Score: {chunk.score?.toFixed(4) ?? "n/a"}</span>
+                              </div>
+                            </summary>
+                            <div className="chunk-content">
+                              <p>{chunk.text}</p>
+                              <p className="chunk-metadata-label">Metadata</p>
                               <pre>{JSON.stringify(chunk.metadata, null, 2)}</pre>
-                            </details>
-                          </article>
+                            </div>
+                          </details>
                         ))}
                       </div>
                     )}

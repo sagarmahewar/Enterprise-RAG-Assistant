@@ -491,11 +491,28 @@ body {
   line-height: 1.55;
 }
 
+.answer-body {
+  display: grid;
+  gap: 0.62rem;
+}
+
 .answer-body p {
-  margin: 0.68rem 0;
+  margin: 0;
   line-height: 1.64;
   color: var(--text-primary);
   font-size: 0.94rem;
+}
+
+.answer-list {
+  margin: 0;
+  padding-left: 1.15rem;
+  color: #dce5fb;
+  font-size: 0.93rem;
+  line-height: 1.62;
+}
+
+.answer-list li + li {
+  margin-top: 0.3rem;
 }
 
 .subsection {
@@ -822,19 +839,51 @@ thead th {
   padding: 0.75rem;
 }
 
-.chunk-card header {
+.chunk-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+
+.chunk-summary::-webkit-details-marker {
+  display: none;
+}
+
+.chunk-summary-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #d8e3ff;
+}
+
+.chunk-summary-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.55rem;
-  margin-bottom: 0.45rem;
-  color: #d8e3ff;
+  color: #9db0ce;
+  font-size: 0.76rem;
+}
+
+.chunk-content {
+  margin-top: 0.62rem;
 }
 
 .chunk-card p {
   margin: 0;
   font-size: 0.88rem;
   line-height: 1.56;
+}
+
+.chunk-metadata-label {
+  margin-top: 0.52rem !important;
+  color: #aeb9d1;
+  font-size: 0.76rem !important;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .chunk-card pre {
