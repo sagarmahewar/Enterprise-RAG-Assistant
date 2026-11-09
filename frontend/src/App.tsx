@@ -3,8 +3,6 @@ import {
   Building2,
   CalendarDays,
   ChartNoAxesCombined,
-  ChevronLeft,
-  ChevronRight,
   CircleUser,
   Clock3,
   CloudUpload,
@@ -15,6 +13,8 @@ import {
   Library,
   Menu,
   MessageCircle,
+  PanelLeftClose,
+  PanelLeftOpen,
   Paperclip,
   RefreshCw,
   Search,
@@ -27,7 +27,7 @@ import {
   Users,
   X
 } from "lucide-react";
-import { ChangeEvent, DragEvent, FormEvent, KeyboardEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, DragEvent, FormEvent, KeyboardEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import { askQuestion, listDocuments, uploadDocument } from "./api";
 import "./App.css";
@@ -273,6 +273,8 @@ export function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [navNotice, setNavNotice] = useState<string | null>(null);
+  const [futureHintTarget, setFutureHintTarget] = useState<"settings" | "profile" | null>(null);
+  const futureHintTimerRef = useRef<number | null>(null);
 
   const documentById = useMemo(() => {
     return new Map(documents.map((document) => [document.document_id, document]));
@@ -353,6 +355,14 @@ export function App() {
 
   useEffect(() => {
     void refreshDocuments();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (futureHintTimerRef.current !== null) {
+        window.clearTimeout(futureHintTimerRef.current);
+      }
+    };
   }, []);
 
   async function refreshDocuments(): Promise<void> {
@@ -539,8 +549,19 @@ export function App() {
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  function showFutureHint(target: "settings" | "profile"): void {
+    setFutureHintTarget(target);
+    if (futureHintTimerRef.current !== null) {
+      window.clearTimeout(futureHintTimerRef.current);
+    }
+    futureHintTimerRef.current = window.setTimeout(() => {
+      setFutureHintTarget(null);
+      futureHintTimerRef.current = null;
+    }, 1800);
+  }
+
   return (
-    <div className="app-root">
+    <div className={`app-root ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
       <aside
         className={`sidebar ${sidebarCollapsed ? "collapsed" : ""} ${sidebarOpen ? "open" : ""}`}
         aria-label="Primary navigation"
@@ -560,14 +581,6 @@ export function App() {
               </div>
             )}
           </div>
-          {!sidebarCollapsed && (
-            <label className="workspace-selector">
-              Workspace
-              <select defaultValue="local">
-                <option value="local">Local Enterprise Workspace</option>
-              </select>
-            </label>
-          )}
         </div>
 
         <nav className="nav-list">
@@ -585,7 +598,7 @@ export function App() {
               {!sidebarCollapsed && (
                 <>
                   <span>{item.label}</span>
-                  {!item.implemented && <span className="beta-tag">Soon</span>}
+                  {!item.implemented && <span className="beta-tag">Future</span>}
                 </>
               )}
             </button>
@@ -612,15 +625,24 @@ export function App() {
                 </div>
               </section>
               <div className="profile-actions">
-                <button type="button">
-                  <Settings size={15} />
-                  Settings
-                </button>
-                <button type="button">
-                  <CircleUser size={15} />
-                  Profile
-                </button>
+                <div className="profile-action-item">
+                  <button type="button" onClick={() => showFutureHint("settings")}>
+                    <Settings size={15} />
+                    Settings
+                  </button>
+                </div>
+                <div className="profile-action-item">
+                  <button type="button" onClick={() => showFutureHint("profile")}>
+                    <CircleUser size={15} />
+                    Profile
+                  </button>
+                </div>
               </div>
+              {futureHintTarget && (
+                <p className="future-hint-inline" role="status">
+                  This feature is planned and will be available in a future release.
+                </p>
+              )}
               <p className="credit-line">
                 Co-engineered with <strong>Microsoft Tools</strong> — a portfolio build by{" "}
                 <strong>Sagar Mahewar</strong>.
@@ -632,7 +654,8 @@ export function App() {
             onClick={() => setSidebarCollapsed((current) => !current)}
             aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+            {!sidebarCollapsed && <span>Collapse sidebar</span>}
           </button>
         </div>
       </aside>
