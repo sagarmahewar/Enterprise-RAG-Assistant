@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { ChangeEvent, DragEvent, FormEvent, KeyboardEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 
 import { askQuestion, listDocuments, uploadDocument } from "./api";
@@ -242,7 +243,11 @@ function isMarkdownTableRow(line: string): boolean {
 }
 
 function normalizeAnswerForMarkdown(answer: string): string {
-  const normalizedLines = answer.split(/\r?\n/).map((line) => line.replace(/\s+$/g, ""));
+  const sanitized = answer
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/\r\n?/g, "\n")
+    .replace(/\\([|*_`])/g, "$1");
+  const normalizedLines = sanitized.split("\n").map((line) => line.replace(/\s+$/g, ""));
   const output: string[] = [];
   let index = 0;
 
@@ -273,7 +278,8 @@ function normalizeAnswerForMarkdown(answer: string): string {
         output.push("");
       }
     } else {
-      output.push(current);
+      const normalizedLine = current.replace(/^\s*[•▪◦]\s+/, "- ");
+      output.push(normalizedLine);
     }
     index += 1;
   }
@@ -837,7 +843,9 @@ export function App() {
                       </header>
 
                       <div className="answer-body answer-markdown">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizeAnswerForMarkdown(qaResponse.answer)}</ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                          {normalizeAnswerForMarkdown(qaResponse.answer)}
+                        </ReactMarkdown>
                         {qaResponse.insufficient_context && (
                           <p className="status-line warning">Insufficient context for a high-confidence grounded answer.</p>
                         )}
