@@ -691,6 +691,15 @@ body {
   margin-bottom: 1rem;
 }
 
+.source-library-intro {
+  margin: 0.35rem 0 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid rgb(56 71 102 / 55%);
+  color: #aeb9d1;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
 .filter-row {
   display: flex;
   flex-wrap: wrap;

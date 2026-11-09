@@ -685,7 +685,7 @@ export function App() {
                   value={question}
                   onChange={(event) => setQuestion(event.target.value)}
                   onKeyDown={(event) => void onQuestionKeyDown(event)}
-                  placeholder="Ask a question about company knowledge..."
+                  placeholder="Attach or select document(s) first, then ask a question grounded in those sources..."
                   rows={4}
                 />
                 <div className="query-toolbar">
@@ -1013,7 +1013,9 @@ export function App() {
                   Refresh
                 </button>
               </div>
-              <p className="status-line">Upload and manage enterprise documents for grounded answers.</p>
+              <p className="source-library-intro">
+                Curate trusted source documents to deliver grounded, citation-backed answers.
+              </p>
 
               <form onSubmit={onUploadSubmit} className="upload-form">
                 <div className="drop-zone" role="presentation" onDragOver={(event) => event.preventDefault()} onDrop={onDropFile}>
