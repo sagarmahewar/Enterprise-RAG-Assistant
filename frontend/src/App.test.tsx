@@ -16,6 +16,7 @@ const QUERY_PLACEHOLDER = "Attach or select document(s) first, then ask a questi
 
 describe("App", () => {
   beforeEach(() => {
+    window.localStorage.clear();
     mockedListDocuments.mockReset();
     mockedListDocuments.mockResolvedValue([
       {

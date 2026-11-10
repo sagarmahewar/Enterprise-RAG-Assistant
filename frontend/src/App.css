@@ -435,11 +435,40 @@ body {
   grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr);
 }
 
+.answer-history-layout {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .answer-column,
 .insights-column {
   display: grid;
   gap: 1rem;
   align-content: start;
+}
+
+.history-column,
+.history-detail-column {
+  min-width: 0;
+}
+
+.history-column .panel {
+  width: 100%;
+  max-width: 100%;
+}
+
+.history-column .history-list {
+  width: 100%;
+  max-width: 100%;
+}
+
+.history-column .history-item {
+  min-width: 0;
+  width: 100%;
+}
+
+.history-detail-panel {
+  min-width: 0;
+  width: 100%;
 }
 
 .answer-panel {
@@ -1166,6 +1195,21 @@ input[type="file"]:focus {
 @media (max-width: 1200px) {
   .answer-layout {
     grid-template-columns: 1fr;
+  }
+
+  .answer-history-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .history-column .panel,
+  .history-column .history-list {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .history-column .history-item,
+  .history-detail-panel {
+    min-width: 0;
   }
 }
 

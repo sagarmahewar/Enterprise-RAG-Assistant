@@ -124,6 +124,9 @@ const INTEGRATIONS = [
   { key: "types", label: "PDF / DOCX / TXT", icon: <Library size={14} />, status: "connected" as const }
 ];
 
+const CONVERSATION_STORAGE_KEY = "enterprise-rag-assistant:conversation:v1";
+const ACTIVE_CONVERSATION_STORAGE_KEY = "enterprise-rag-assistant:active-conversation-id:v1";
+
 function formatBytes(bytes: number): string {
   if (bytes < 1024) {
     return `${bytes} B`;
@@ -378,6 +381,14 @@ export function App() {
   const confidenceLabel = getConfidenceLabel(confidenceScore);
   const keyPoints = qaResponse ? summarizeKeyPoints(qaResponse.answer) : [];
   const followUpQuestions = buildFollowUps(activeConversation);
+  const pageTitle =
+    activeView === "source-library" ? "Source Library" : activeView === "answer-history" ? "Answer History" : "Ask AI";
+  const pageSubtitle =
+    activeView === "source-library"
+      ? "Manage enterprise source documents for grounded answers."
+      : activeView === "answer-history"
+        ? "Review and reopen your previous AI answers."
+        : "Get accurate answers from your enterprise knowledge.";
   const suggestedQuestions = useMemo(() => {
     const scopedDocuments = documents.filter((document) => selectedDocumentIds.has(document.document_id));
     if (scopedDocuments.length === 0) {
@@ -420,6 +431,56 @@ export function App() {
   useEffect(() => {
     void refreshDocuments();
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    try {
+      const storedConversation = window.localStorage.getItem(CONVERSATION_STORAGE_KEY);
+      if (storedConversation) {
+        const parsed = JSON.parse(storedConversation) as unknown;
+        if (Array.isArray(parsed)) {
+          setConversation(parsed as ConversationEntry[]);
+        }
+      }
+      const storedActiveConversationId = window.localStorage.getItem(ACTIVE_CONVERSATION_STORAGE_KEY);
+      if (storedActiveConversationId) {
+        setActiveConversationId(storedActiveConversationId);
+      }
+    } catch {
+      window.localStorage.removeItem(CONVERSATION_STORAGE_KEY);
+      window.localStorage.removeItem(ACTIVE_CONVERSATION_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.localStorage.setItem(CONVERSATION_STORAGE_KEY, JSON.stringify(conversation));
+  }, [conversation]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (!activeConversationId) {
+      window.localStorage.removeItem(ACTIVE_CONVERSATION_STORAGE_KEY);
+      return;
+    }
+    window.localStorage.setItem(ACTIVE_CONVERSATION_STORAGE_KEY, activeConversationId);
+  }, [activeConversationId]);
+
+  useEffect(() => {
+    if (!activeConversationId) {
+      return;
+    }
+    if (conversation.some((entry) => entry.id === activeConversationId)) {
+      return;
+    }
+    setActiveConversationId(conversation.length > 0 ? conversation[conversation.length - 1].id : null);
+  }, [conversation, activeConversationId]);
 
   useEffect(() => {
     return () => {
@@ -725,8 +786,8 @@ export function App() {
             <Menu size={18} />
           </button>
           <div>
-            <h1>Ask AI</h1>
-            <p>Get accurate answers from your enterprise knowledge.</p>
+            <h1>{pageTitle}</h1>
+            <p>{pageSubtitle}</p>
           </div>
         </header>
 
@@ -736,7 +797,7 @@ export function App() {
           </p>
         )}
 
-        {(activeView === "ask-ai" || activeView === "answer-history") && (
+        {activeView === "ask-ai" && (
           <>
             <section className="query-panel">
               <form onSubmit={onAsk} className="query-form">
@@ -1004,33 +1065,81 @@ export function App() {
                     </>
                   )}
                 </section>
-
-                <section className="panel">
-                  <h2>Conversation history</h2>
-                  {conversation.length === 0 && <p className="status-line">No questions asked yet.</p>}
-                  <div className="history-list">
-                    {[...conversation].reverse().map((entry) => (
-                      <button
-                        key={entry.id}
-                        type="button"
-                        className={`history-item ${activeConversation?.id === entry.id ? "active" : ""}`}
-                        onClick={() => {
-                          setActiveConversationId(entry.id);
-                          setActiveView("ask-ai");
-                        }}
-                      >
-                        <span>{entry.question}</span>
-                        <small>
-                          <Clock3 size={12} />
-                          {new Date(entry.askedAt).toLocaleTimeString()}
-                        </small>
-                      </button>
-                    ))}
-                  </div>
-                </section>
               </aside>
             </section>
           </>
+        )}
+
+        {activeView === "answer-history" && (
+          <section className="answer-layout answer-history-layout">
+            <div className="answer-column history-column">
+              <section className="panel">
+                <h2>Conversation history</h2>
+                {conversation.length === 0 && <p className="status-line">No questions asked yet.</p>}
+                <div className="history-list">
+                  {[...conversation].reverse().map((entry) => (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      className={`history-item ${activeConversation?.id === entry.id ? "active" : ""}`}
+                      onClick={() => setActiveConversationId(entry.id)}
+                    >
+                      <span>{entry.question}</span>
+                      <small>
+                        <Clock3 size={12} />
+                        {new Date(entry.askedAt).toLocaleString()}
+                      </small>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            </div>
+
+            <aside className="insights-column history-detail-column">
+              <article className="answer-panel history-detail-panel">
+                {!activeConversation && <p className="status-line">Select a history item to view details.</p>}
+                {activeConversation && qaResponse && (
+                  <>
+                    <header className="message-header user">
+                      <div className="avatar user-avatar">
+                        <CircleUser size={17} />
+                      </div>
+                      <div>
+                        <p className="message-title">You asked</p>
+                        <p className="message-meta">{new Date(activeConversation.askedAt).toLocaleString()}</p>
+                      </div>
+                    </header>
+                    <p className="question-text">{activeConversation.question}</p>
+
+                    <header className="message-header assistant">
+                      <div className="avatar ai-avatar">
+                        <Sparkles size={17} />
+                      </div>
+                      <div>
+                        <p className="message-title">AI response</p>
+                        <p className="message-meta">
+                          Confidence:{" "}
+                          <span className={`confidence-pill ${confidenceLabel === "n/a" ? "low" : confidenceLabel}`}>
+                            {confidenceLabel === "n/a" ? "n/a" : `${confidenceLabel} (${Math.round((confidenceScore ?? 0) * 100)}%)`}
+                          </span>
+                        </p>
+                      </div>
+                    </header>
+                    <div className="answer-body answer-markdown">
+                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                        {normalizeAnswerForMarkdown(qaResponse.answer)}
+                      </ReactMarkdown>
+                    </div>
+                    <div className="answer-actions">
+                      <button type="button" onClick={() => setActiveView("ask-ai")}>
+                        Open in Ask AI
+                      </button>
+                    </div>
+                  </>
+                )}
+              </article>
+            </aside>
+          </section>
         )}
 
         {activeView === "source-library" && (
