@@ -736,22 +736,25 @@ body {
   border-radius: var(--radius-md);
   background: var(--bg-panel-alt);
   padding: 0.7rem;
+  display: grid;
+  gap: 0.45rem;
 }
 
 .metric-card p {
   margin: 0;
   font-size: 0.76rem;
   color: var(--text-secondary);
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.34rem;
 }
 
 .metric-card strong {
   display: inline-block;
-  margin-top: 0.32rem;
+  margin-top: 0;
   font-size: 1.35rem;
   font-weight: 700;
+  line-height: 1.15;
 }
 
 .metric-icon {
